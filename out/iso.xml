@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<iso_project image_name="biolab.bin" cue_sheet="biolab.cue">
+	<track type="data">
+		<identifiers
+			system="PLAYSTATION"
+			volume="BIOLAB_DISASTER"
+			volume_set="BIOLAB_DISASTER"
+			publisher="PHOBOSLAB"
+			data_preparer="PSN00BSDK"
+			application="PLAYSTATION"
+			copyright="README.TXT;1"
+		/>
+		<directory_tree>
+			<file name="SYSTEM.CNF" type="data" source="system.cnf" />
+			<file name="BIOLAB.EXE" type="data" source="BIOLAB.EXE" />
+		</directory_tree>
+	</track>
+	<track type="audio" source="../assets/music/biochemie.wav" />
+</iso_project>
