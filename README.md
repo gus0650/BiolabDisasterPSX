@@ -1,4 +1,4 @@
-# Biolab Disaster – PlayStation port
+# Biolab Disaster PSX
 
 Port of phoboslab's *Biolab Disaster* to the Sony PlayStation (PS1).
 
