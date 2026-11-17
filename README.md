@@ -10,10 +10,9 @@ BIOLAB DISASTER is a game by Dominic Szablewski (Phobos Labs). He released the g
 
 Original code: https://github.com/phoboslab/high_biolab
 
+## Description
 
-## Build outputs
-- `biolab.bin` + `biolab.cue`: bootable disc image (game + the original music as a CD audio track)
-- `BIOLAB.EXE`: the program alone, for emulators that load PS-EXE files directly (no music, because it needs the CD)
+"A terrible disaster struck a biological laboratory. Now it's swarmed with deadly mutants, filled with poisonous acid and it gradually collapses. As a former scientist, you have to clear your way towards the exit, killing foul creatures with your blaster and collecting chemical tubes."
 
 ## Controls
 - D-pad: move
@@ -27,6 +26,10 @@ Original code: https://github.com/phoboslab/high_biolab
 - Sound effects: SPU ADPCM, 22 kHz (11 kHz for the long ones).
 - Same fixed-point game engine as the Mega Drive port, at 320x240 and a full 60 fps.
 - The disc has no Sony license data. Real consoles need a modchip or softmod (e.g. FreePSXBoot, Unirom); emulators boot it directly.
+
+## Build outputs
+- `biolab.bin` + `biolab.cue`: bootable disc image (game + the original music as a CD audio track)
+- `BIOLAB.EXE`: the program alone, for emulators that load PS-EXE files directly (no music, because it needs the CD)
 
 ## Building
 The game assets (graphics, sounds, music) are not part of this repository: they belong to their authors and have no license. `src/gen/` is generated from them at build time.
