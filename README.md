@@ -2,15 +2,15 @@
 
 Port of phoboslab's *Biolab Disaster* to the Sony PlayStation (PS1).
 
-<img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/7d195c01-f2fd-42a4-b463-bd7b4cc1ddc2" />
-
-<img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/18f33ea7-cfc3-4fb3-957d-487f24310675" />
-
 BIOLAB DISASTER is a game by Dominic Szablewski (Phobos Labs). He released the game in 2010 and later put the source code on GitHub. I really like this game so I ported it to the PlayStation with the help of AI.
 
 Original code: https://github.com/phoboslab/high_biolab
 
 ## Description
+
+<img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/7d195c01-f2fd-42a4-b463-bd7b4cc1ddc2" />
+
+<img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/18f33ea7-cfc3-4fb3-957d-487f24310675" />
 
 "A terrible disaster struck a biological laboratory. Now it's swarmed with deadly mutants, filled with poisonous acid and it gradually collapses. As a former scientist, you have to clear your way towards the exit, killing foul creatures with your blaster and collecting chemical tubes."
 
