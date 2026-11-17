@@ -1,6 +1,6 @@
 # Biolab Disaster – PlayStation port
 
-Port of phoboslab's *Biolab Disaster* to the Sony PlayStation (PS1), built with PSn00bSDK.
+Port of phoboslab's *Biolab Disaster* to the Sony PlayStation (PS1).
 
 <img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/7d195c01-f2fd-42a4-b463-bd7b4cc1ddc2" />
 
@@ -21,6 +21,7 @@ Original code: https://github.com/phoboslab/high_biolab
 - START: start / continue
 
 ## Notes
+- built with PSn00bSDK
 - Original graphics in full color (one 256-color palette per sprite sheet). The glass dome uses real translucency, and the ending plasma uses additive blending with all 100 sprites.
 - Music: the original `biochemie.wav` at full CD quality, looped by the CD drive.
 - Sound effects: SPU ADPCM, 22 kHz (11 kHz for the long ones).
