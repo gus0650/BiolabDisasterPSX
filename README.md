@@ -6,6 +6,10 @@ Port of phoboslab's *Biolab Disaster* to the Sony PlayStation (PS1), built with 
 
 <img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/18f33ea7-cfc3-4fb3-957d-487f24310675" />
 
+BIOLAB DISASTER is a game by Dominic Szablewski (Phobos Labs). He released the game in 2010 and later put the source code on GitHub. I really like this game so I ported it to the PlayStation with the help of AI.
+
+Original code: https://github.com/phoboslab/high_biolab
+
 
 ## Build outputs
 - `biolab.bin` + `biolab.cue`: bootable disc image (game + the original music as a CD audio track)
