@@ -2,6 +2,11 @@
 
 Port of phoboslab's *Biolab Disaster* to the Sony PlayStation (PS1), built with PSn00bSDK.
 
+<img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/7d195c01-f2fd-42a4-b463-bd7b4cc1ddc2" />
+
+<img width="480" height="320" alt="image" src="https://github.com/user-attachments/assets/18f33ea7-cfc3-4fb3-957d-487f24310675" />
+
+
 ## Build outputs
 - `biolab.bin` + `biolab.cue`: bootable disc image (game + the original music as a CD audio track)
 - `BIOLAB.EXE`: the program alone, for emulators that load PS-EXE files directly (no music, because it needs the CD)
