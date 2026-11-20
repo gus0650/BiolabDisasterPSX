@@ -1,6 +1,7 @@
 // All entity types of Biolab Disaster, ported from src/entities/*.c
 
 #include "game.h"
+#include "levelgen.h"
 
 #define PLAYER() entity_by_ref(g.player)
 #define DEC(V) do { (V) -= TICK; if ((V) < -30000) (V) = -30000; } while (0)
@@ -517,7 +518,12 @@ static void level_change_settings(entity_t *self, const LevelEntity *def) {
 }
 
 static void level_change_trigger(entity_t *self, entity_t *other) {
-	game_set_level(self->level_change.level);
+	if (self->level_change.level == LEVEL_NEXT_RANDOM) {
+		g.random_count++;
+	}
+	else {
+		game_set_level(self->level_change.level);
+	}
 	engine_set_scene(&scene_stats);
 }
 

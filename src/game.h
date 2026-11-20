@@ -11,6 +11,9 @@ typedef struct {
 	s32 level_time;
 	s16 level;
 	s16 music_volume;
+	u8 random_mode;      // playing generated levels
+	u16 random_count;    // completed random levels (difficulty)
+	u32 random_seed;     // seed of the first random level
 	u16 fade_white;
 } global_t;
 

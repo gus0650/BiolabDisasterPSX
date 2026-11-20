@@ -369,6 +369,8 @@ void input_update(void) {
 		if (b & (PAD_CROSS | PAD_UP)) s |= BTN_JUMP;
 		if (b & (PAD_SQUARE | PAD_CIRCLE)) s |= BTN_SHOOT;
 		if (b & PAD_START) s |= BTN_START;
+		if (b & PAD_UP) s |= BTN_UP;
+		if (b & PAD_DOWN) s |= BTN_DOWN;
 	}
 	in_prev = in_state;
 	in_state = s;
@@ -719,7 +721,7 @@ entity_t *entity_spawn(u8 type, s32 px, s32 py) {
 	if (entity_unique_id == 0) {
 		entity_unique_id = 1;
 	}
-	u8 slot = e->slot;
+	u16 slot = e->slot;
 	memset(e, 0, sizeof(entity_t));
 	e->slot = slot;
 	e->type = type;

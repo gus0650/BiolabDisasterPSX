@@ -29,7 +29,7 @@
 #define SCREEN_H 240
 #define MIN_BOUNCE VEL(10)
 
-#define ENTITIES_MAX 250
+#define ENTITIES_MAX 400
 #define PARTICLES_MAX 120
 
 // --- Animation ---------------------------------------------------------------
@@ -138,7 +138,7 @@ typedef struct entity_t entity_t;
 
 struct entity_t {
 	u16 id;
-	u8 slot;         // index in entity storage
+	u16 slot;        // index in entity storage
 	u8 is_alive;
 	u8 on_ground;
 	s16 draw_order;
@@ -281,6 +281,8 @@ void gfx_flash_white(u16 amount);
 #define BTN_JUMP  4
 #define BTN_SHOOT 8
 #define BTN_START 16
+#define BTN_UP    32
+#define BTN_DOWN  64
 u16 input_state(u16 b);
 u16 input_pressed(u16 b);
 void input_update(void);

@@ -14,6 +14,13 @@ Original code: https://github.com/phoboslab/high_biolab
 
 "A terrible disaster struck a biological laboratory. Now it's swarmed with deadly mutants, filled with poisonous acid and it gradually collapses. As a former scientist, you have to clear your way towards the exit, killing foul creatures with your blaster and collecting chemical tubes."
 
+## Random levels
+The title screen has two modes, chosen with Up/Down:
+- **Story Mode**: the three original levels.
+- **Random Level**: endless generated levels. Left/Right changes the seed, Square picks a new random seed, START begins. Every completed level continues with the next seed. Levels start at 160 tiles and grow by 32 tiles (one screen) per completed level, up to 1024 tiles from level 28 on; enemy density rises over the first 20 levels. The same seed always produces the same level, so seeds can be shared.
+
+The generator (`src/levelgen.c`) builds a winding route from flat runs, steps, small pits, climbing shafts, drops and platform crossings over deadly pits. Every jump fits the player's physics. Tiles are chosen by a model learned from the original levels (`gen_tile_model()` in `tools/convert.py`), so generated levels use the same lab panels, rock, pipes and fittings. `tools/levelgen_test.c` runs the generator on a PC for previews and testing.
+
 ## Controls
 - D-pad: move
 - Cross (or Up): jump (hold to jump higher)

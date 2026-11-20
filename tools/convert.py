@@ -368,6 +368,64 @@ def gen_sounds():
 	print('  SPU sound data: %d bytes' % total)
 	assert total < 512 * 1024 - 0x1010 - 64
 
+# ---------------------------------------------------------------------------
+# Tile model for the random level generator: which main-layer tile the
+# original levels use for a given 3x3 solid/empty pattern, given the tiles
+# already placed to the left and above (with back-off to smaller contexts).
+
+def gen_tile_model():
+	import collections
+	GRASS = set(range(81, 97))  # animated grass/slime, only used in level 3
+	T3 = collections.defaultdict(collections.Counter)
+	T2 = collections.defaultdict(collections.Counter)
+	T2u = collections.defaultdict(collections.Counter)
+	T1 = collections.defaultdict(collections.Counter)
+	for lf in LEVELS:
+		d = json.load(open(os.path.join(A, 'levels', lf)))
+		maps = {m['name']: m for m in d['maps']}
+		main = maps['main']['data']
+		col = maps['collision']['data']
+		h, w = len(col), len(col[0])
+		def S(x, y):
+			return 1 if (x < 0 or y < 0 or x >= w or y >= h) else (1 if col[y][x] == 1 else 0)
+		for y in range(h):
+			for x in range(w):
+				k = 0
+				for dy in (-1, 0, 1):
+					for dx in (-1, 0, 1):
+						k = (k << 1) | S(x + dx, y + dy)
+				t = main[y][x]
+				if t in GRASS:
+					continue
+				left = main[y][x - 1] if x > 0 else 255
+				up = main[y - 1][x] if y > 0 else 255
+				if left in GRASS: left = 0
+				if up in GRASS: up = 0
+				T3[(k << 16) | (left << 8) | up][t] += 1
+				T2[(k << 16) | (left << 8) | 254][t] += 1
+				T2u[(k << 16) | (253 << 8) | up][t] += 1
+				T1[(k << 16) | (252 << 8) | 252][t] += 1
+	keys = []
+	items = []
+	for tab in (T3, T2, T2u, T1):
+		for key in tab:
+			keys.append((key, len(items), len(tab[key])))
+			for t, c in tab[key].most_common():
+				items.append((t, min(c, 65535)))
+	keys.sort()
+	h_lines.append('typedef struct { u32 key; u16 first, count; } TileCtx;')
+	h_lines.append('typedef struct { u8 tile; u8 _pad; u16 weight; } TileChoice;')
+	h_lines.append('#define TILE_CTX_COUNT %d' % len(keys))
+	h_lines.append('extern const TileCtx tile_ctx[%d];' % len(keys))
+	h_lines.append('extern const TileChoice tile_choice[%d];' % len(items))
+	c_lines.append('const TileCtx tile_ctx[%d] = {' % len(keys))
+	c_lines.extend('\t{0x%08X, %d, %d},' % k for k in keys)
+	c_lines.append('};')
+	c_lines.append('const TileChoice tile_choice[%d] = {' % len(items))
+	c_lines.append(fmt(['{%d, 0, %d}' % it for it in items], 12, '%s'))
+	c_lines.append('};')
+	print('  tile model: %d contexts, %d choices' % (len(keys), len(items)))
+
 def gen_trig():
 	vals = [int(round(math.sin(i * 2 * math.pi / 256) * 16384)) for i in range(256)]
 	c_lines.append('const s16 sin_table[256] = {')
@@ -387,6 +445,7 @@ def main():
 	h_lines.append('#define VRAM_UPLOAD_COUNT %d' % len(uploads))
 	h_lines.append('extern const VramUpload vram_uploads[%d];' % len(uploads))
 	gen_levels()
+	gen_tile_model()
 	gen_sounds()
 	gen_trig()
 	h_lines.append('#endif')

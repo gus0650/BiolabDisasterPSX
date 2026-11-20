@@ -1,1 +1,8 @@
+build/
+out/*.bin
+out/*.cue
+out/*.EXE
+assets/
+tools/adpcm
 src/gen/
+__pycache__/

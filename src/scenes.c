@@ -1,4 +1,6 @@
 #include "game.h"
+#include "levelgen.h"
+#include <psxgpu.h>
 #include <stdio.h>
 
 global_t g;
@@ -14,7 +16,7 @@ global_t g;
 static entity_ref_t last_checkpoint;
 static s32 initial_spawn_x, initial_spawn_y;
 static camera_t camera;
-static entity_t *level_spawned[96];
+static entity_t *level_spawned[LEVELGEN_MAX_ENTS];
 
 void game_set_level(s16 level) {
 	g.level = level;
@@ -73,17 +75,24 @@ void game_respawn(void) {
 	g.death_count++;
 }
 
+// seed of the level currently being played in random mode
+static u32 current_seed(void) {
+	return g.random_seed + g.random_count;
+}
+
 static void game_init(void) {
-	const LevelDef *l = levels[g.level];
+	const LevelDef *l = g.random_mode ?
+		levelgen_generate(current_seed(), g.random_count) :
+		levels[g.level];
 	map_load(l);
 	engine.gravity = ACC(240);
 	g.fade_white = 0;
 
-	for (u16 i = 0; i < l->nents && i < 96; i++) {
+	for (u16 i = 0; i < l->nents && i < LEVELGEN_MAX_ENTS; i++) {
 		const LevelEntity *d = &l->ents[i];
 		level_spawned[i] = entity_spawn(d->type, FP(d->x), FP(d->y));
 	}
-	for (u16 i = 0; i < l->nents && i < 96; i++) {
+	for (u16 i = 0; i < l->nents && i < LEVELGEN_MAX_ENTS; i++) {
 		if (level_spawned[i]) {
 			entity_vtab[level_spawned[i]->type].settings(level_spawned[i], &l->ents[i]);
 		}
@@ -138,21 +147,69 @@ const scene_t scene_game = {game_init, game_update, game_draw, game_cleanup};
 // Title
 
 static u8 intro_sound_played;
+static void title_reroll_seed(void);
+static u32 title_frames;        // grows from power-on, used to pick seeds
+static u8 seed_picked;
 
 static void title_init(void) {
 	intro_sound_played = false;
+	title_frames += VSync(-1);
+	if (!seed_picked) {
+		title_reroll_seed();
+	}
+}
+
+static u8 menu_sel;            // 0 = story, 1 = random level
+static char seed_text[32];
+
+static void title_reroll_seed(void) {
+	u32 h = (title_frames + 1) * 2654435761U ^ ((u32)engine.time + 7) * 40503U;
+	h ^= h >> 16;
+	g.random_seed = h % 100000;
 }
 
 static void title_update(void) {
+	title_frames++;
 	if (engine.time > T(0.5) && !intro_sound_played) {
 		SOUND(SND_INTRO);
 		intro_sound_played = true;
 	}
-	if (input_pressed(BTN_SHOOT | BTN_JUMP | BTN_START)) {
+	if (engine.time < T(1)) {
+		return;
+	}
+	if (input_pressed(BTN_UP | BTN_DOWN)) {
+		menu_sel ^= 1;
+		if (!seed_picked) {
+			// the moment the player first opens the menu decides the seed
+			title_reroll_seed();
+			seed_picked = 1;
+		}
+	}
+	if (menu_sel == 1) {
+		if (input_pressed(BTN_LEFT)) {
+			g.random_seed = g.random_seed ? g.random_seed - 1 : 99999;
+		}
+		if (input_pressed(BTN_RIGHT)) {
+			g.random_seed = (g.random_seed + 1) % 100000;
+		}
+		if (input_pressed(BTN_SHOOT)) {
+			title_reroll_seed();
+		}
+	}
+	if (input_pressed(BTN_START | BTN_JUMP)) {
 #ifdef DEBUG_LEVEL
 		game_set_level(DEBUG_LEVEL);
 #else
 		game_set_level(0);
+#endif
+#ifdef DEBUG_SEED
+		g.random_seed = DEBUG_SEED;
+#endif
+		g.random_mode = menu_sel == 1;
+#ifdef DEBUG_RCOUNT
+		g.random_count = DEBUG_RCOUNT;
+#else
+		g.random_count = 0;
 #endif
 		g.music_volume = 256;
 		music_play();
@@ -174,9 +231,17 @@ static void title_draw(void) {
 	gfx_draw_image(&img_title_biolab, x_logo, 26 + OY, TITLE_BIOLAB_W, TITLE_BIOLAB_H);
 	gfx_draw_image(&img_title_disaster, x_logo, 70 + OY, TITLE_DISASTER_W, TITLE_DISASTER_H);
 	gfx_draw_image(&img_title_player, x_player, 56 + OY, TITLE_PLAYER_W, TITLE_PLAYER_H);
-	s32 k = d * 2 / 600;
-	if (d > T(2) || (k % 2) == 0) {
-		text_draw(120 + OX, 140 + OY, "Press START to Play", ALIGN_CENTER);
+	if (d >= 0) {
+		text_draw(50 + OX, 126 + OY, "Story Mode", ALIGN_LEFT);
+		text_draw(50 + OX, 138 + OY, "Random Level", ALIGN_LEFT);
+		if (menu_sel == 1) {
+			sprintf(seed_text, "<  Seed %05u  >", (unsigned)g.random_seed);
+			text_draw(58 + OX, 152 + OY, seed_text, ALIGN_LEFT);
+		}
+		// blinking cursor
+		if ((engine.frame / 20) % 3) {
+			text_draw(40 + OX, (menu_sel ? 138 : 126) + OY, ">", ALIGN_LEFT);
+		}
 	}
 }
 
@@ -185,13 +250,21 @@ const scene_t scene_title = {title_init, title_update, title_draw, NULL};
 // ---------------------------------------------------------------------------
 // Stats
 
-static char s_time[24], s_tubes[24], s_deaths[24];
+static char s_time[24], s_tubes[24], s_deaths[24], s_title[48];
 
 static void stats_init(void) {
 	u32 t = g.level_time; // 1/600 s
 	sprintf(s_time, "%u.%02us", (unsigned)(t / 600), (unsigned)((t % 600) / 6));
 	sprintf(s_tubes, "%d/%d", g.tubes_collected, g.tubes_total);
 	sprintf(s_deaths, "%d", g.death_count);
+	if (g.random_mode) {
+		// random_count was already advanced by the exit trigger
+		sprintf(s_title, "Random Level %u Complete!  (Seed %05u)",
+			(unsigned)g.random_count, (unsigned)((g.random_seed + g.random_count - 1) % 100000));
+	}
+	else {
+		sprintf(s_title, "Level Complete!");
+	}
 }
 
 static void stats_update(void) {
@@ -201,7 +274,7 @@ static void stats_update(void) {
 }
 
 static void stats_draw(void) {
-	text_draw(120 + OX, 20 + OY, "Level Complete!", ALIGN_CENTER);
+	text_draw(120 + OX, 20 + OY, s_title, ALIGN_CENTER);
 	text_draw(98 + OX, 56 + OY, "Time:", ALIGN_RIGHT);
 	text_draw(104 + OX, 56 + OY, s_time, ALIGN_LEFT);
 	text_draw(98 + OX, 68 + OY, "Tubes Collected:", ALIGN_RIGHT);
