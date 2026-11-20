@@ -1,0 +1,104 @@
+# Builds the PS1 disc image and uploads it to itch.io with butler.
+#
+# Setup (once):
+#   1. itch.io -> Account settings -> API keys -> "Generate new API key".
+#      GitHub repo -> Settings -> Secrets and variables -> Actions -> Secrets:
+#        BUTLER_API_KEY = <that key>
+#   2. Create the game page on itch.io (Kind: Downloadable). Then, same settings page -> Variables:
+#        ITCH_GAME = <itch user>/<game url name>   e.g. gus0650/biolab-disaster-psx
+#
+# Runs on: a pushed tag "v*" (e.g. git tag v1.0 && git push origin v1.0) or manually
+# from the Actions tab ("Run workflow"; untick "upload" to only build).
+
+name: Build and upload to itch.io
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "Upload to itch.io (otherwise only build)"
+        type: boolean
+        default: true
+
+env:
+  PSN00BSDK_COMMIT: 5d9aa2d3dfc7d6e51c2eb942ab4cdbae5571a40a
+  HIGH_BIOLAB_COMMIT: 8bad1607ab19419e6a5cb7610a79208bddea28cd
+  PSN00BSDK_ROOT: ${{ github.workspace }}/../psn00b
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-mipsel-linux-gnu g++-mipsel-linux-gnu binutils-mipsel-linux-gnu ninja-build
+          pip install --break-system-packages numpy pillow scipy
+
+      - name: Cache PSn00bSDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PSN00BSDK_ROOT }}
+          key: psn00bsdk-${{ env.PSN00BSDK_COMMIT }}-ubuntu24-mipsel-linux-gnu
+
+      - name: Build PSn00bSDK
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git init -q ../PSn00bSDK && cd ../PSn00bSDK
+          git remote add origin https://github.com/Lameguy64/PSn00bSDK
+          git fetch -q --depth 1 origin "$PSN00BSDK_COMMIT" && git checkout -q FETCH_HEAD
+          git submodule update -q --init --recursive --depth 1
+          cmake --preset default -DPSN00BSDK_TARGET=mipsel-linux-gnu -DSKIP_EXAMPLES=ON \
+            -DCMAKE_BUILD_TYPE=Release --install-prefix "$PSN00BSDK_ROOT"
+          cmake --build ./build
+          cmake --install ./build
+
+      - name: Get game assets (phoboslab/high_biolab)
+        run: |
+          git init -q ../high_biolab && cd ../high_biolab
+          git remote add origin https://github.com/phoboslab/high_biolab
+          git fetch -q --depth 1 origin "$HIGH_BIOLAB_COMMIT" && git checkout -q FETCH_HEAD
+          cp -r assets "$GITHUB_WORKSPACE/"
+
+      - name: Build game
+        run: |
+          gcc -O2 -o tools/adpcm tools/adpcm.c
+          ./build.sh
+
+      - name: Package
+        id: pkg
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v="dev-${GITHUB_SHA::7}"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          mkdir -p dist/disc dist/exe
+          cp out/biolab.bin out/biolab.cue dist/disc/
+          cp out/BIOLAB.EXE dist/exe/
+
+      - name: Keep build as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: biolab-psx-${{ steps.pkg.outputs.version }}
+          path: dist/
+          retention-days: 14
+
+      - name: Upload to itch.io
+        if: github.event_name == 'push' || inputs.upload
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_GAME: ${{ vars.ITCH_GAME }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ] || [ -z "$ITCH_GAME" ]; then
+            echo "::error::Set the BUTLER_API_KEY secret and the ITCH_GAME variable (see top of this file)."
+            exit 1
+          fi
+          curl -sSfL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+          ./butler/butler -V
+          ./butler/butler push dist/disc "$ITCH_GAME:ps1-disc" --userversion "$VERSION"
+          ./butler/butler push dist/exe  "$ITCH_GAME:ps1-exe"  --userversion "$VERSION"
