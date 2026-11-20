@@ -10,7 +10,7 @@
 # Pull requests only build (no upload).
 # Uploads on: a new tag "v*" or manually from the Actions tab ("Run workflow"; untick
 # "upload" to only build). The easiest way to release: GitHub -> Releases -> "Draft a new
-# release" -> new tag v1.x -> Publish. The workflow then attaches the disc image and EXE
+# release" -> new tag (e.g. v1.1) -> Publish. The workflow then attaches the disc image and EXE
 # to that release and uploads to itch.io. (A tag pushed with git works too; the release is
 # then created with .github/release-notes.md.)
 
