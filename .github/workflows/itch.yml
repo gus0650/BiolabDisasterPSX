@@ -7,7 +7,8 @@
 #   2. Create the game page on itch.io (Kind: Downloadable). Then, same settings page -> Variables:
 #        ITCH_GAME = <itch user>/<game url name>   e.g. gus0650/biolab-disaster-psx
 #
-# Runs on: a pushed tag "v*" (e.g. git tag v1.0 && git push origin v1.0) or manually
+# Pull requests only build (no upload).
+# Uploads on: a pushed tag "v*" (e.g. git tag v1.0 && git push origin v1.0) or manually
 # from the Actions tab ("Run workflow"; untick "upload" to only build).
 
 name: Build and upload to itch.io
@@ -15,6 +16,7 @@ name: Build and upload to itch.io
 on:
   push:
     tags: ["v*"]
+  pull_request:          # build only, no upload
   workflow_dispatch:
     inputs:
       upload:
@@ -87,7 +89,7 @@ jobs:
           retention-days: 14
 
       - name: Upload to itch.io
-        if: github.event_name == 'push' || inputs.upload
+        if: startsWith(github.ref, 'refs/tags/') || inputs.upload
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           ITCH_GAME: ${{ vars.ITCH_GAME }}
