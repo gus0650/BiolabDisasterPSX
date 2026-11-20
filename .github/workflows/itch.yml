@@ -8,8 +8,11 @@
 #        ITCH_GAME = <itch user>/<game url name>   e.g. gus0650/biolab-disaster-psx
 #
 # Pull requests only build (no upload).
-# Uploads on: a pushed tag "v*" (e.g. git tag v1.0 && git push origin v1.0) or manually
-# from the Actions tab ("Run workflow"; untick "upload" to only build).
+# Uploads on: a new tag "v*" or manually from the Actions tab ("Run workflow"; untick
+# "upload" to only build). The easiest way to release: GitHub -> Releases -> "Draft a new
+# release" -> new tag v1.x -> Publish. The workflow then attaches the disc image and EXE
+# to that release and uploads to itch.io. (A tag pushed with git works too; the release is
+# then created with .github/release-notes.md.)
 
 name: Build and upload to itch.io
 
@@ -23,6 +26,9 @@ on:
         description: "Upload to itch.io (otherwise only build)"
         type: boolean
         default: true
+
+permissions:
+  contents: write   # attach the build to the GitHub release
 
 env:
   PSN00BSDK_COMMIT: 5d9aa2d3dfc7d6e51c2eb942ab4cdbae5571a40a
@@ -87,6 +93,20 @@ jobs:
           name: biolab-psx-${{ steps.pkg.outputs.version }}
           path: dist/
           retention-days: 14
+
+      - name: Attach to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          (cd dist/disc && zip -q "../BiolabDisasterPSX-$TAG-disc.zip" biolab.bin biolab.cue)
+          files="dist/BiolabDisasterPSX-$TAG-disc.zip dist/exe/BIOLAB.EXE"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $files --clobber
+          else
+            gh release create "$TAG" $files --title "Biolab Disaster PSX $TAG" --notes-file .github/release-notes.md
+          fi
 
       - name: Upload to itch.io
         if: startsWith(github.ref, 'refs/tags/') || inputs.upload
