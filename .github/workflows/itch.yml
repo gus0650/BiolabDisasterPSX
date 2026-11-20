@@ -8,7 +8,8 @@
 #        ITCH_GAME = <itch user>/<game url name>   e.g. gus0650/biolab-disaster-psx
 #
 # Pull requests only build (no upload).
-# Uploads on: a new tag "v*" or manually from the Actions tab ("Run workflow"; untick
+# Uploads on: a push to main that changes the VERSION file (version = its content),
+#   or a new tag "v*" or manually from the Actions tab ("Run workflow"; untick
 # "upload" to only build). The easiest way to release: GitHub -> Releases -> "Draft a new
 # release" -> new tag (e.g. v1.1) -> Publish. The workflow then attaches the disc image and EXE
 # to that release and uploads to itch.io. (A tag pushed with git works too; the release is
@@ -19,6 +20,8 @@ name: Build and upload to itch.io
 on:
   push:
     tags: ["v*"]
+    branches: [main]
+    paths: [VERSION]     # main: only when VERSION changes (not evaluated for tags)
   pull_request:          # build only, no upload
   workflow_dispatch:
     inputs:
@@ -81,7 +84,9 @@ jobs:
       - name: Package
         id: pkg
         run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v="dev-${GITHUB_SHA::7}"; fi
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"
+          elif [ "$GITHUB_EVENT_NAME" = push ]; then v="$(tr -d '[:space:]' < VERSION)"
+          else v="dev-${GITHUB_SHA::7}"; fi
           echo "version=$v" >> "$GITHUB_OUTPUT"
           mkdir -p dist/disc dist/exe
           cp out/biolab.bin out/biolab.cue dist/disc/
@@ -109,7 +114,7 @@ jobs:
           fi
 
       - name: Upload to itch.io
-        if: startsWith(github.ref, 'refs/tags/') || inputs.upload
+        if: github.event_name == 'push' || inputs.upload
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           ITCH_GAME: ${{ vars.ITCH_GAME }}
